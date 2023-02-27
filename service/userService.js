@@ -11,9 +11,6 @@ import jwt  from "jsonwebtoken";
 const registration = async function (email, password) {
   const candidate = await User.findOne({ email });
   if (candidate) {
-    // return {
-    //     message:`Пользователь с почтовым адресом ${email} уже существует`
-    // }
     throw ApiError.BarRequest(`Пользователь с почтовым адресом ${email} уже существует`);
   }
   const hashPassword = await bcrypt.hash(password, 3);

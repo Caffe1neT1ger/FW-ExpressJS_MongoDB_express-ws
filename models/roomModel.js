@@ -4,8 +4,9 @@ const { ObjectId } = mongoose.Schema;
 const roomSchema = mongoose.Schema(
   {
     ownerId: {
-      type: ObjectId,
-      ref: "User",
+      type: String,
+      // type: ObjectId,
+      // ref: "User",
       required: true,
     },
     movieId: {
@@ -14,10 +15,20 @@ const roomSchema = mongoose.Schema(
     },
     spectatorsId: [
       {
-        type: ObjectId,
-        ref: "User",
+        type:String
+        // type: ObjectId,
+        // ref: "User",
       },
     ],
+    progress: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    type:{
+      type:String,
+      required:true,
+    }
   },
   {
     minimize: false,
