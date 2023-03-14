@@ -1,7 +1,9 @@
 import { ApiError } from "../exceptions/apiError.js";
 import Room from "../models/roomModel.js";
+import User from "../models/userModel.js";
 import aWss from "../server.js";
-/* Создение комнаты в БД и WS */
+
+/* Создение комнаты в БД и WS  ws*/
  const createRoom = async function (ws, messageData) {
   /*
     messageData = {
@@ -14,8 +16,9 @@ import aWss from "../server.js";
     }
     */
   /* Создали комнату в БД */
+  const user =await  User.findById(messageData.ownerId);
   const room = await Room.create({
-    ownerId: messageData.ownerId,
+    ownerId: user._id,
     movieId: messageData.movieId,
     spectatorsId: [],
     progress: 0,
@@ -39,80 +42,88 @@ import aWss from "../server.js";
   getUserList(ws, messageData);
 
 };
-/*  Удаление комнаты из БД */
- const deleteRoom = async function (ws, messageData) {
+
+/*  Удаление комнаты из БД  http*/
+ const deleteRoom = async function (data) {
   /*
-    message = {
-        id: String,
-        type: "delete"
+    data = {
+        roomId: String,
     }
     */
-  const room = await Room.deleteOne({ _id: messageData.roomId });
+  const room = await Room.deleteOne({ _id: data.roomId });
   return room;
 };
-/* Показывает все открытые комнаты */
- const showPublicRooms = async function (ws, messageData) {
+
+/* Показывает все открытые комнаты http*/
+ const showPublicRooms = async function () {
   const rooms = await Room.find({ type: "public" });
+  console.log("get public in service")
   return rooms;
 };
-/* Показывает закрытые комнаты пользовтеля*/
- const showPrivateRooms = async function (ws, messageData) {
+
+/* Показывает закрытые комнаты пользовтеля http*/
+ const showPrivateRooms = async function (data) {
   /*
-    message = {
+    data = {
         ownerId: String,
-        type: "showPrivate"
+
     }
     */
 
-  const rooms = await Room.find({ ownerId: messageData.ownerId });
+  const rooms = await Room.find({ ownerId: data.ownerId });
   return rooms;
 };
-/* Сохранение прогрессы в БД */
- const updateRoomProgress = async function (ws, messageData) {
+
+/* Сохранение прогрессы в БД http*/
+ const updateRoomProgress = async function (data) {
   /*
-    message={
+    data={
         roomId: String,
         userId:String,
         progress: Number,
-        type: "update"
+        movieId:String
     }
     */
 
-  const room = await Room.findById(messageData.roomId);
-  if (userId != room.ownerId) {
-    messageData.message("Пользователь не является адимном этой комнаты");
-    return messageData;
+  const room = await Room.findById(data.roomId);
+  if (data.userId != room.ownerId) {
+    data.message("Пользователь не является адимном этой комнаты");
+    return data;
   }
-  room.progress = messageData.progress;
+  room.progress = data.progress;
+  room.movieId = data.movieId;
   return await room.save();
 };
-/* Удаляет зрителя из комнаты */
- const removeSpectator = async function (ws, messageData) {
+
+/* Удаляет зрителя из комнаты http*/
+ const removeSpectator = async function (data) {
   /*
       message={
           roomId: String,
-          spectator: Number,
-          type: "removeSpectator"
+          spectator: String,
+
       }
       */
 
-  const room = await Room.findById(messageData.roomId);
+  const room = await Room.findById(data.roomId);
   const spectators = room.spectatorsId;
-  room.progress = spectators.filter((item) => item != messageData.spectator);
+  room.progress = spectators.filter((item) => item.str != data.spectator);
   return await room.save();
 };
-/* Получаем комнату по его id */
- const getRoom = async function (ws, messageData) {
+
+/* Получаем комнату по его id http*/
+ const getRoom = async function (data) {
   /*
     message={
         roomId: String,
-        type: "getOne"
+
     }
     */
-  const room = await Room.findById(messageData.roomId);
+  const room = await Room.findById(data.roomId);
   return room;
 };
-/* Соединяет пользовтеля с комнатой */
+
+/* Соединяет пользовтеля с комнатой ws*/
  const connection = async function (ws, messageData) {
   /*
   const data = {
@@ -122,7 +133,7 @@ import aWss from "../server.js";
   */
 
   const room = await Room.findById(messageData.roomId);
-  room.spectatorsId = room.spectatorsId.push(messageData.userId);
+  room.spectatorsId.push(messageData.userId);
   await room.save();
 
   messageData.isOwner = false;
@@ -138,7 +149,8 @@ import aWss from "../server.js";
   messageData.message = `Пользователь ${messageData.userId} подключился к комнате`;
   getUserList(ws, messageData);
 };
-/* */
+
+/* ws*/
  const getUserList = async function (ws, messageData) {
   let arr = [];
   aWss.clients.forEach((client) => {
@@ -152,7 +164,8 @@ import aWss from "../server.js";
   messageData.userList = JSON.parse(JSON.stringify(arr));
   broadcastConnection(ws, messageData);
 };
-/* Пересылает ws сообщение всем пользователям в комнате */
+
+/* Пересылает ws сообщение всем пользователям в комнате ws*/
  const broadcastConnection = function (ws, messageData) {
   // const user = {
   //   userId: "001",
@@ -173,8 +186,8 @@ import aWss from "../server.js";
   //   movieId:"movieId",
   // };
   aWss.clients.forEach((client) => {
-    console.log(messageData)
-    console.log( client.roomId,messageData.roomId)
+    // console.log(messageData)
+    // console.log( client.roomId,messageData.roomId)
     if (client.roomId === messageData.roomId) {
        
       if (messageData.method == "connection") {

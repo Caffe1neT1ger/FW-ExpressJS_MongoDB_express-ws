@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import { connectionDB } from "./config/db.js";
 
 import router from "./router/index.js";
-import wsRouter from "./router/wsRouter.js";
+import roomRouter from './router/roomRouter.js'
 
 import errorMiddleware from "./middleware/errorMiddleware.js";
 import { roomController } from "./controllers/roomController.js";
@@ -25,6 +25,7 @@ app.use(cookieParser());
 app.use("/api", router);
 // app.ws('/api/ws/',wsRouter)
 app.ws('/api/ws',roomController)
+app.use('/api/room',roomRouter)
 app.use(errorMiddleware);
 const PORT = process.env.PORT || 3000;
 
